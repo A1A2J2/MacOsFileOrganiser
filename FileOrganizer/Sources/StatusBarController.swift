@@ -5,6 +5,7 @@ class StatusBarController: NSObject, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var menu: NSMenu!
     private var settingsWindowController: SettingsWindowController?
+    private var infoWindowController: InfoWindowController?
     private var historyMenuItem: NSMenuItem!
     
     // Store references to items we want to update
