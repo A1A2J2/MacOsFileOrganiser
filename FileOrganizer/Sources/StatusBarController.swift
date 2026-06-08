@@ -167,6 +167,14 @@ class StatusBarController: NSObject, NSMenuDelegate {
         NSApp.activate(ignoringOtherApps: true) // Bring to front
     }
     
+    @objc private func showInfo() {
+        if infoWindowController == nil {
+            infoWindowController = InfoWindowController()
+        }
+        infoWindowController?.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    
     @objc private func quitApp() {
         NSApplication.shared.terminate(self)
     }
