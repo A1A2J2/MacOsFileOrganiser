@@ -92,8 +92,12 @@ class InfoWindowController: NSWindowController, NSWindowDelegate {
         legalLabel.alignment = .center
         legalLabel.isSelectable = true
         legalLabel.maximumNumberOfLines = 0
-        legalLabel.preferredMaxLayoutWidth = 360
+        legalLabel.lineBreakMode = .byWordWrapping
+        legalLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         
         stackView.addArrangedSubview(legalLabel)
+        
+        legalLabel.translatesAutoresizingMaskIntoConstraints = false
+        legalLabel.widthAnchor.constraint(equalTo: stackView.widthAnchor, constant: -40).isActive = true
     }
 }
