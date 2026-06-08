@@ -24,6 +24,20 @@ class InfoWindowController: NSWindowController, NSWindowDelegate {
     private func setupUI() {
         guard let contentView = window?.contentView else { return }
         
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.drawsBackground = false
+        contentView.addSubview(scrollView)
+        
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        ])
+        
         let stackView = NSStackView()
         stackView.orientation = .vertical
         stackView.alignment = .centerX
@@ -31,13 +45,8 @@ class InfoWindowController: NSWindowController, NSWindowDelegate {
         stackView.edgeInsets = NSEdgeInsets(top: 30, left: 20, bottom: 30, right: 20)
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
-        contentView.addSubview(stackView)
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-        ])
+        scrollView.documentView = stackView
+        stackView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor).isActive = true
         
         // App Icon (using a system symbol as a placeholder if no icon exists)
         let imageView = NSImageView()
