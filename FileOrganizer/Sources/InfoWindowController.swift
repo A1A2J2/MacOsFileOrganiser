@@ -70,7 +70,7 @@ class InfoWindowController: NSWindowController, NSWindowDelegate {
         
         // Legal Info
         let legalText = """
-        © 2026 Arham Siva. All rights reserved.
+        © 2026 A1A2J2. All rights reserved.
         
         This software is provided "as-is", without any express or implied warranty. In no event shall the authors be held liable for any damages arising from the use of this software.
         
