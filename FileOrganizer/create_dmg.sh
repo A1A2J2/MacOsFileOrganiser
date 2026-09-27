@@ -1,31 +1,24 @@
 #!/bin/bash
 set -e
 
-APP_NAME="FileOrganizer"
-APP_BUNDLE="FileOrganizer.app"
-DMG_NAME="${APP_NAME}.dmg"
-VOLUME_NAME="${APP_NAME} Installer"
-
-# Remove existing DMG if it exists
-if [ -f "$DMG_NAME" ]; then
-    rm "$DMG_NAME"
+# Ensure create-dmg is installed before running
+if ! command -v create-dmg &> /dev/null; then
+    echo "Installing create-dmg utility..."
+    brew install create-dmg
 fi
 
-echo "Creating DMG for $APP_NAME..."
+echo "Building final DMG package seamlessly..."
+rm -f "FileOrganizer.dmg"
 
-# Create a temporary staging directory
-STAGING_DIR=$(mktemp -d "/tmp/${APP_NAME}_DMG_XXXXXX")
+create-dmg \
+  --volname "FileOrganizer Installer" \
+  --volicon "AppIcon.icns" \
+  --background "bg.png" \
+  --window-size 600 400 \
+  --icon-size 100 \
+  --icon "FileOrganizer.app" 160 200 \
+  --app-drop-link 440 200 \
+  "FileOrganizer.dmg" \
+  "FileOrganizer.app"
 
-# Copy the App bundle into the staging directory
-cp -r "$APP_BUNDLE" "$STAGING_DIR/"
-
-# Create a symlink to Applications folder in the staging directory
-ln -s /Applications "$STAGING_DIR/Applications"
-
-# Create the DMG using hdiutil
-hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_NAME"
-
-# Clean up staging directory
-rm -rf "$STAGING_DIR"
-
-echo "DMG successfully created at $DMG_NAME"
+echo "🎉 Success! Clean DMG built without annoying mount popups."
