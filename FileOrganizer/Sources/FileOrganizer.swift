@@ -8,11 +8,26 @@ class FileOrganizer {
     
     // Categories and their extensions
     private let extensionMappings: [String: [String]] = [
+       
         "Photos": ["jpg", "jpeg", "png", "gif", "heic", "heif", "webp", "tiff", "tif", "psd", "raw", "cr2", "nef", "orf", "sr2", "bmp", "svg", "ico"],
         "Videos": ["mp4", "mov", "mkv", "avi", "wmv", "flv", "webm", "m4v", "mpg", "mpeg", "3gp"],
         "Documents": ["pdf", "docx", "doc", "txt", "rtf", "xlsx", "xls", "pptx", "ppt", "csv", "pages", "numbers", "key", "md", "odt", "ods", "odp"],
         "Archives": ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "dmg", "iso", "pkg"],
-        "Audio": ["mp3", "wav", "flac", "m4a", "aac", "ogg", "wma", "aiff", "alac", "mid", "midi"]
+        "Audio": ["mp3", "wav", "flac", "m4a", "aac", "ogg", "wma", "aiff", "alac", "mid", "midi"],
+        "Cad": ["step", "stp", "iges", "igs", "stl", "3mf", "sldprt", "sldasm", "ipt", "iam", "catpart", "catproduct", "dwg", "dxf", "f3d", "obj", "ply", "x_t", "x_b", "sat", "prt", "asm"],
+        "MineCraft": ["jar", "mcpack", "mcworld", "mctemplate"],
+        "Apps": ["dmg", "app", "pkg"],
+        "Windows": ["exe", "msi", "bat", "cmd", "com", "sys", "dll", "lnk"],
+        "Linux": ["deb", "rpm", "sh", "bin", "run"],
+        "Mobile": ["apk", "xapk", "ipa"],
+        "VideoGames": ["rom", "bin", "img", "smc", "sfc", "nes", "gba", "gbc", "gb", "iso", "cue", "mds", "mdf", "chd", "pbp", "xci", "nsp", "wua", "rpx", "pak", "wad"],
+        "Programming": ["html", "htm", "css", "js", "ts", "jsx", "tsx", "json", "php", "py", "java", "c", "cpp", "h", "cs", "go", "rs", "rb"],
+        "DataConfig": ["xml", "yaml", "yml", "ini", "conf", "toml", "sql"],
+        "Design3D": ["blend", "fbx", "max", "c4d", "ma", "mb", "ai", "eps", "xd", "fig", "sketch"],
+        "Fonts": ["ttf", "otf", "woff", "woff2", "eot"]
+
+
+
     ]
     
     private let codingMappings: [String: [String]] = [
