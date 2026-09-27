@@ -8,7 +8,6 @@ class FileOrganizer {
     
     // Categories and their extensions
     private let extensionMappings: [String: [String]] = [
-       
         "Photos": ["jpg", "jpeg", "png", "gif", "heic", "heif", "webp", "tiff", "tif", "psd", "raw", "cr2", "nef", "orf", "sr2", "bmp", "svg", "ico"],
         "Videos": ["mp4", "mov", "mkv", "avi", "wmv", "flv", "webm", "m4v", "mpg", "mpeg", "3gp"],
         "Documents": ["pdf", "docx", "doc", "txt", "rtf", "xlsx", "xls", "pptx", "ppt", "csv", "pages", "numbers", "key", "md", "odt", "ods", "odp"],
@@ -25,9 +24,6 @@ class FileOrganizer {
         "DataConfig": ["xml", "yaml", "yml", "ini", "conf", "toml", "sql"],
         "Design3D": ["blend", "fbx", "max", "c4d", "ma", "mb", "ai", "eps", "xd", "fig", "sketch"],
         "Fonts": ["ttf", "otf", "woff", "woff2", "eot"]
-
-
-
     ]
     
     private let codingMappings: [String: [String]] = [
@@ -44,16 +40,22 @@ class FileOrganizer {
         let organizationFolder = outputURL.appendingPathComponent("Organization", isDirectory: true)
         
         do {
-            // Create Organization folder if it doesn't exist
             if !fileManager.fileExists(atPath: organizationFolder.path) {
-                try fileManager.createDirectory(at: organizationFolder, withIntermediateDirectories: true, attributes: nil)
+                try fileManager.createDirectory(at: organizationFolder, withIntermediateDirectories: true)
             }
             
-            // Get files in source directory
-            // We use skipsHiddenFiles to ignore hidden files
-            let contents = try fileManager.contentsOfDirectory(at: sourceURL, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
+            // 1. Collect loose files from the source folder
+            var filesToProcess = getFiles(in: sourceURL, recursive: false)
             
-            // Get excluded extensions from UserDefaults
+            // 2. Collect existing files inside Organization folder recursively to re-organize them
+            if fileManager.fileExists(atPath: organizationFolder.path) {
+                let existingFiles = getFiles(in: organizationFolder, recursive: true)
+                filesToProcess.append(contentsOf: existingFiles)
+            }
+            
+            // Deduplicate in case sourceURL and outputURL are the same
+            let uniqueFiles = Array(Set(filesToProcess))
+            
             let excludedString = UserDefaults.standard.string(forKey: "excludedExtensions") ?? ""
             let excludedExtensions = excludedString.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
             
@@ -61,27 +63,22 @@ class FileOrganizer {
             var affectedCategories = Set<String>()
             var currentBatchMoves: [FileMove] = []
             
-            for fileURL in contents {
-                // Skip directories
-                var isDir: ObjCBool = false
-                if fileManager.fileExists(atPath: fileURL.path, isDirectory: &isDir), isDir.boolValue {
+            for fileURL in uniqueFiles {
+                let ext = fileURL.pathExtension.lowercased()
+                if ext.isEmpty || excludedExtensions.contains(ext) { continue }
+                
+                let targetCategoryPath = determineCategoryPath(for: ext, baseFolder: organizationFolder)
+                
+                // Skip moving if the file is ALREADY in the correct category directory
+                if fileURL.deletingLastPathComponent().path == targetCategoryPath.path {
                     continue
                 }
                 
-                let ext = fileURL.pathExtension.lowercased()
-                if ext.isEmpty { continue } // Skip files without extensions
-                
-                // Skip excluded extensions
-                if excludedExtensions.contains(ext) { continue }
-                
-                let categoryPath = determineCategoryPath(for: ext, baseFolder: organizationFolder)
-                
-                // Create category folder if it doesn't exist
-                if !fileManager.fileExists(atPath: categoryPath.path) {
-                    try fileManager.createDirectory(at: categoryPath, withIntermediateDirectories: true, attributes: nil)
+                if !fileManager.fileExists(atPath: targetCategoryPath.path) {
+                    try fileManager.createDirectory(at: targetCategoryPath, withIntermediateDirectories: true)
                 }
                 
-                let targetURL = determineUniqueFileURL(for: fileURL, in: categoryPath)
+                let targetURL = determineUniqueFileURL(for: fileURL, in: targetCategoryPath)
                 
                 let attributes = try? fileManager.attributesOfItem(atPath: fileURL.path)
                 let creationDate = attributes?[.creationDate] as? Date
@@ -90,7 +87,7 @@ class FileOrganizer {
                 
                 try fileManager.moveItem(at: fileURL, to: targetURL)
                 
-                // Restore attributes on targetURL so "Date Added" is preserved exactly
+                // Restore attributes
                 var newAttributes: [FileAttributeKey: Any] = [:]
                 if let cDate = creationDate { newAttributes[.creationDate] = cDate }
                 if let mDate = modificationDate { newAttributes[.modificationDate] = mDate }
@@ -103,7 +100,7 @@ class FileOrganizer {
                 
                 currentBatchMoves.append(FileMove(originalPath: fileURL.path, newPath: targetURL.path, creationDate: creationDate, modificationDate: modificationDate, dateAddedRaw: dateAddedRaw))
                 filesMoved += 1
-                affectedCategories.insert(categoryPath.lastPathComponent)
+                affectedCategories.insert(targetCategoryPath.lastPathComponent)
             }
             
             if filesMoved > 0 {
@@ -115,6 +112,23 @@ class FileOrganizer {
         } catch {
             print("Error organizing files: \(error.localizedDescription)")
         }
+    }
+    
+    private func getFiles(in url: URL, recursive: Bool) -> [URL] {
+        guard let enumerator = fileManager.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: recursive ? [.skipsHiddenFiles] : [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+        ) else { return [] }
+        
+        var fileURLs: [URL] = []
+        for case let fileURL as URL in enumerator {
+            var isDir: ObjCBool = false
+            if fileManager.fileExists(atPath: fileURL.path, isDirectory: &isDir), !isDir.boolValue {
+                fileURLs.append(fileURL)
+            }
+        }
+        return fileURLs
     }
     
     private func runPostScanCommand(filesMoved: Int, source: String, output: String) {
@@ -141,14 +155,12 @@ class FileOrganizer {
     }
     
     private func determineCategoryPath(for ext: String, baseFolder: URL) -> URL {
-        // Check normal categories
         for (category, extensions) in extensionMappings {
             if extensions.contains(ext) {
                 return baseFolder.appendingPathComponent(category, isDirectory: true)
             }
         }
         
-        // Check coding categories
         for (subCategory, extensions) in codingMappings {
             if extensions.contains(ext) {
                 let codingFolder = baseFolder.appendingPathComponent("Coding", isDirectory: true)
@@ -156,14 +168,12 @@ class FileOrganizer {
             }
         }
         
-        // If it's a known development file but not categorized
         let otherCodingExtensions = ["asm", "r", "lua", "vbs", "asmx", "clj", "erl"]
         if otherCodingExtensions.contains(ext) {
              let codingFolder = baseFolder.appendingPathComponent("Coding", isDirectory: true)
              return codingFolder.appendingPathComponent("Other", isDirectory: true)
         }
         
-        // For unknown files, return Misc folder
         return baseFolder.appendingPathComponent("Misc", isDirectory: true)
     }
     
